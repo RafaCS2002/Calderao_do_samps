@@ -2,38 +2,54 @@ import { Box, Text, TextField, Image, Button } from '@skynexui/components';
 import react from 'react';
 import React from 'react';
 import appConfig from '../config.json';
+import { createClient } from '@supabase/supabase-js';
+
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlhdCI6MTY0MzM5NzkzNiwiZXhwIjoxOTU4OTczOTM2fQ.IeaW8aX7wggfura46S60EHzUGW7hjw61TeSE-nVtZgA';
+const SUPABASE_URL = 'https://fcepuxpisonqqgrqomrw.supabase.co';
+const supabaseClient = createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+
+supabaseClient
+    .from('mensagens')
+    .select('*')
+    .then((dados)=>{
+        console.log('Dados da consulta:',dados);
+    });
+
 
 export default function ChatPage() {
-    // Sua lógica vai aqui
-    {/*
-        =Usuario
-            - Usuario digita no campo texto
-            - Apertar enter para enviar
-            - Tem que add o texto na listagem
-            
-        =DEV
-            -[X] Campos Criados
-            -[X] Vamos Usar onChange e useState para a variavel de texto
-            -[X] Lista de msg
-    */}
-    // ./Sua lógica vai aqui
-
-    function handleNovaMensagem(novaMensagem) {
-        const mensagem = {
-            id: listaDeMensagens.length,
-            de: 'RafaCS2002',
-            texto: novaMensagem
-        };
-        setListaDeMensagens([
-            mensagem,
-            ...listaDeMensagens,
-        ]);
-        setMensagem("");
-    }
-
     const [mensagem, setMensagem] = React.useState("");
     const [listaDeMensagens, setListaDeMensagens] = react.useState([]);
 
+    React.useEffect(()=>{
+        supabaseClient
+            .from('mensagens')
+            .select('*')
+            .order('id',{ascending: false})
+            .then(({data})=>{
+                console.log('Dados da consulta:',data);
+                setListaDeMensagens(data);
+            });
+    },[]);
+
+    function handleNovaMensagem(novaMensagem) {
+        const mensagem = {
+            de: 'RafaCS2002',
+            texto: novaMensagem
+        };
+        supabaseClient
+            .from('mensagens')
+            .insert([
+                mensagem
+            ])
+            .then(({data})=>{
+                console.log("Criando msg:",data[0])  
+                setListaDeMensagens([
+                    data[0],
+                    ...listaDeMensagens,
+                ]);
+            });
+        setMensagem("");
+    }
 
     return (
         <Box
@@ -100,7 +116,6 @@ export default function ChatPage() {
                                 setMensagem(valor);
                             }}
                             onKeyPress={(event) => {
-                                console.log(event)
                                 if (event.key == 'Enter' && mensagem != '') {
                                     handleNovaMensagem(mensagem);
                                     event.preventDefault();
@@ -185,7 +200,7 @@ function MessageList(props) {
                                     display: 'inline-block',
                                     marginRight: '8px',
                                 }}
-                                src={`https://github.com/RafaCS2002.png`}
+                                src={`https://github.com/${mensagemAtual.de}.png`}
                             />
                             <Text tag="strong">
                                 {mensagemAtual.de}

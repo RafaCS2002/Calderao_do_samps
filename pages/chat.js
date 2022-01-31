@@ -3,37 +3,80 @@ import react from 'react';
 import React from 'react';
 import appConfig from '../config.json';
 import { createClient } from '@supabase/supabase-js';
+import { useRouter } from 'next/router';
+import { ButtonSendSticker } from '../src/components/ButtonSendStickers';
 
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlhdCI6MTY0MzM5NzkzNiwiZXhwIjoxOTU4OTczOTM2fQ.IeaW8aX7wggfura46S60EHzUGW7hjw61TeSE-nVtZgA';
 const SUPABASE_URL = 'https://fcepuxpisonqqgrqomrw.supabase.co';
-const supabaseClient = createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+function escutaMensagensEmTempoReal(adicionaMensagem) {
+    return supabaseClient
+        .from('mensagens')
+        .on('INSERT', (resp) => {
+            adicionaMensagem(resp.new)
+        })
+        .subscribe();
+}
 
 supabaseClient
     .from('mensagens')
     .select('*')
-    .then((dados)=>{
-        console.log('Dados da consulta:',dados);
+    .then((dados) => {
+        //console.log('Dados da consulta:', dados);
     });
 
 
 export default function ChatPage() {
+    const roteamento = useRouter();
+    const usuarioLogado = roteamento.query.username;
     const [mensagem, setMensagem] = React.useState("");
-    const [listaDeMensagens, setListaDeMensagens] = react.useState([]);
+    const [listaDeMensagens, setListaDeMensagens] = react.useState([
+        // {
+        //     id:'1',
+        //     de:'RafaCS2002',
+        //     texto:':sticker: https://www.alura.com.br/imersao-react-4/assets/figurinhas/Figurinha_3.png',
+        // }
+    ]);
 
-    React.useEffect(()=>{
+    React.useEffect(() => {
         supabaseClient
             .from('mensagens')
             .select('*')
-            .order('id',{ascending: false})
-            .then(({data})=>{
-                console.log('Dados da consulta:',data);
+            .order('id', { ascending: false })
+            .then(({ data }) => {
+                // console.log('Dados da consulta:',data);
                 setListaDeMensagens(data);
             });
-    },[]);
+
+        const subscription = escutaMensagensEmTempoReal((novaMensagem) => {
+            // console.log('Nova mensagem:', novaMensagem);
+            // console.log('listaDeMensagens:', listaDeMensagens);
+
+            // Quero reusar um valor de referencia (objeto/array) 
+            // Passar uma função pro setState
+
+            // setListaDeMensagens([
+            //     novaMensagem,
+            //     ...listaDeMensagens
+            // ])
+            setListaDeMensagens((valorAtualDaLista) => {
+                // console.log('valorAtualDaLista:', valorAtualDaLista);
+                return [
+                    novaMensagem,
+                    ...valorAtualDaLista,
+                ]
+            });
+        });
+
+        return () => {
+            subscription.unsubscribe();
+        }
+    }, []);
 
     function handleNovaMensagem(novaMensagem) {
         const mensagem = {
-            de: 'RafaCS2002',
+            de: usuarioLogado,
             texto: novaMensagem
         };
         supabaseClient
@@ -41,13 +84,7 @@ export default function ChatPage() {
             .insert([
                 mensagem
             ])
-            .then(({data})=>{
-                console.log("Criando msg:",data[0])  
-                setListaDeMensagens([
-                    data[0],
-                    ...listaDeMensagens,
-                ]);
-            });
+            .then();
         setMensagem("");
     }
 
@@ -56,7 +93,7 @@ export default function ChatPage() {
             styleSheet={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 backgroundColor: appConfig.theme.colors.primary["400"],
-                backgroundImage: 'url(https://www.tbsconsultoria.com.br/wp-content/uploads/2021/05/fantasy-universe-space-background-volumetric-lighting-3d-render-1-scaled.jpg)',
+                backgroundImage: 'url(https://ogimg.infoglobo.com.br/in/24581416-aae-bd5/FT1086A/THEROCK.jpg)',
                 backgroundRepeat: 'no-repeat', backgroundSize: 'cover', backgroundBlendMode: 'multiply',
                 color: appConfig.theme.colors.neutrals['000']
             }}
@@ -68,7 +105,7 @@ export default function ChatPage() {
                     flex: 1,
                     boxShadow: '0 2px 10px 0 rgb(0 0 0 / 20%)',
                     borderRadius: '5px',
-                    backgroundColor: appConfig.theme.colors.neutrals[700]+"80",
+                    backgroundColor: appConfig.theme.colors.neutrals[700] + "80",
                     height: '100%',
                     maxWidth: '95%',
                     maxHeight: '95vh',
@@ -82,7 +119,7 @@ export default function ChatPage() {
                         display: 'flex',
                         flex: 1,
                         height: '80%',
-                        backgroundColor: appConfig.theme.colors.neutrals[600]+'80',
+                        backgroundColor: appConfig.theme.colors.neutrals[600] + '80',
                         flexDirection: 'column',
                         borderRadius: '5px',
                         padding: '16px',
@@ -134,6 +171,13 @@ export default function ChatPage() {
                                 color: appConfig.theme.colors.neutrals[200],
                             }}
                         />
+                        {/* Callback */}
+                        <ButtonSendSticker
+                            onStickerClick={(sticker) => {
+                                // console.log('Salva esse sticker no banco');
+                                handleNovaMensagem(':sticker: ' + sticker);
+                            }}
+                        />
                     </Box>
                 </Box>
             </Box>
@@ -160,7 +204,7 @@ function Header() {
 }
 
 function MessageList(props) {
-    console.log('MessageList', props);
+    // console.log('MessageList', props);
     return (
         <Box
             tag="ul"
@@ -216,7 +260,19 @@ function MessageList(props) {
                                 {(new Date().toLocaleDateString())}
                             </Text>
                         </Box>
-                        {mensagemAtual.texto}
+                        {/* Declarativo */}
+                        {mensagemAtual.texto.startsWith(':sticker:')
+                            ? (
+                                <Image 
+                                    src={mensagemAtual.texto.replace(':sticker:', '')} 
+                                    styleSheet={{
+                                        maxWidth:'30%',
+                                    }}   
+                                />
+                            ) : (
+                                mensagemAtual.texto
+                            )
+                        }
                     </Text>
                 )
             })}

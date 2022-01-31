@@ -46,7 +46,7 @@ export default function PaginaInicial() {
         styleSheet={{
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           backgroundColor: appConfig.theme.colors.primary[300],
-          backgroundImage: 'url(https://www.tbsconsultoria.com.br/wp-content/uploads/2021/05/fantasy-universe-space-background-volumetric-lighting-3d-render-1-scaled.jpg)',
+          backgroundImage: 'url(https://ogimg.infoglobo.com.br/in/24581416-aae-bd5/FT1086A/THEROCK.jpg)',
           backgroundRepeat: 'no-repeat', backgroundSize: 'cover', backgroundBlendMode: 'multiply',
         }}
       >
@@ -71,7 +71,7 @@ export default function PaginaInicial() {
             onSubmit={function (infosDoEvento) {
               infosDoEvento.preventDefault();
               console.log("Alguem submeteu");
-              roteamento.push('/chat');
+              roteamento.push(`/chat?username=${username}`);
             }}
             styleSheet={{
               display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
